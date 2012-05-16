@@ -1,0 +1,2 @@
+#!/bin/sh
+php ../../../redis.info.php -i6379 -olocalhost -p6379 -w1

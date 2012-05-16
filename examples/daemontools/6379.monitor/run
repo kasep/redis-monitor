@@ -1,0 +1,2 @@
+#!/bin/sh
+php ../../../redis.monitor.php -i6379 -olocalhost -p6379 -t1 -c100 -w0
