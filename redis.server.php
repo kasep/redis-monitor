@@ -42,23 +42,6 @@ out
     ->do;
 
 // }}}
-// {{{ Commands
-
-class Commands
-{
-    private $cmds = array();
-
-    function reset() { $this->cmds = array(); }
-
-    function add($cmd, $ratio, $freq)
-    {
-        $this->cmds[$cmd] = array(
-            'ratio'=>$ratio,
-            'freq'=>$freq);
-    }
-}
-
-// }}}
 // {{{ process
 
 /**
