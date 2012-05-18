@@ -8,9 +8,10 @@ This collections of tools allow to monitor activities and status of multiple ins
 - `redis.monitor.php` Grab informations from the `monitor` command of one instance and create statistics.
 - `redis.ui.php` An *HTML* page that display the status and activities for all instances.
 
-> **WARNING:**<br>
+> **README:**<br>
 > It was designed before the Redis release 2.6, so the `redis.monitor.php` could be useless.<br>
-> Never tried in a production environment yet. Soon!
+> Never tried in a production environment yet. Soon!<br>
+> `INFO commandstats` is not implements yet.
 
 ![Screenshot showing the UI](http://prettysimple.github.com/redis-monitor/screenshot.png)
 
