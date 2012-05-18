@@ -9,15 +9,16 @@ use Exception;
 
 if( PHP_SAPI!='cli') die("Must be run in cli");
 
-require_once 'lib.cli.php';
-require_once 'lib.arg.php';
-require_once 'lib.redis.php';
-require_once 'lib.log.php';
-require_once 'inc.errors.php';
+require_once 'qad/libraries/lib.cli.php';
+require_once 'qad/libraries/lib.arg.php';
+require_once 'qad/libraries/lib.log.php';
+require_once 'qad/includes/inc.errors.php';
+require_once 'qad/libraries/lib.redis.php';
 
 // {{{ --errors management
 
-$log = log\lookup('info');
+log\lookup('info');
+log\level('NONE');
 set_error_handler('qad\error_handler');
 set_exception_handler(function(Exception $e){
     std\err("%s at %s:%s",$e->getMessage(),$e->getFile(),$e->getLine());
@@ -33,6 +34,7 @@ $auth = false; // Password af the redis server.
 $id = false; // The server identifier.
 $wait = 5000; // Wait beetween two info/config commands.
 arg\parser()
+    ->arg('verbose','v')->exe(function(){log\level('TRACE');})
     ->arg('help','h')->exe(function(){std\out(
 <<<out
 Usage: {$GLOBALS['argv'][0]} -d=DSN -i=ID -h=HOST -p=PORT [-a=AUTH] [-w=WAIT] [-h]
@@ -47,6 +49,7 @@ Options:
   -p, --port=PORT   The PORT of the Redis server to monitor.
   -a, --auth=AUTH   The AUTH password for the Redis server.
   -w, --wait=TIME   Wait for TIME seconds before listing for the next infos.
+  -v, --verbose     Display trace for debugging. (not used)
 
 out
     );exit(1);})

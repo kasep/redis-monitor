@@ -9,14 +9,15 @@ use Exception;
 
 if( PHP_SAPI!='cli') die("Must be run in cli");
 
-require_once 'lib.cli.php';
-require_once 'lib.arg.php';
-require_once 'lib.log.php';
-require_once 'inc.errors.php';
+require_once 'qad/libraries/lib.cli.php';
+require_once 'qad/libraries/lib.arg.php';
+require_once 'qad/libraries/lib.log.php';
+require_once 'qad/includes/inc.errors.php';
 
 // {{{ --errors management
 
-$log = log\lookup('server');
+log\lookup('server');
+log\level('NONE');
 set_error_handler('qad\error_handler');
 set_exception_handler(function(Exception $e){
     std\err("%s at %s:%s",$e->getMessage(),$e->getFile(),$e->getLine());
@@ -27,6 +28,7 @@ set_exception_handler(function(Exception $e){
 
 $zmq = 'tcp://127.0.0.1:5555'; // DSN for the 0MQ server.
 arg\parser()
+    ->arg('verbose','v')->exe(function(){log\level('TRACE');})
     ->arg('help','h')->exe(function(){std\out(
 <<<out
 Usage: {$GLOBALS['argv'][0]} -d=DSN [-h]
@@ -35,6 +37,7 @@ Options:
   -h, --help        This help page.
   -d, --dsn         The DSN (Data Source Name) for the ZMQ server.
                     ex: tcp://127.0.0.1:5555
+  -v, --verbose     Display trace for debugging.
 
 out
     );exit(1);})
@@ -69,7 +72,7 @@ function process($socket)
 {
     global $commands, $infos, $log, $fives;
     $msg = $socket->recv();
-    //log\trace('MSG: %s',$msg);
+    log\trace('MSG: %s',$msg);
     switch(true)
     {
 
@@ -78,8 +81,8 @@ function process($socket)
     // Format of the JSON: {cmd:CMD, ratio:RATIO, freq:FREQ}
     // Will return "ok" to the ZMQ client.
     case ($msg[0]=='+' and is_object($data=json_decode(substr($msg,1)))):
-        //log\trace("Add stats commands for server: %s",$data->id);
-        //log\trace($msg);
+        log\trace("Add stats commands for server: %s",$data->id);
+        log\trace($msg);
         $commands[$data->id] = $data->commands;
         $socket->send('ok');
         break;
@@ -90,7 +93,7 @@ function process($socket)
     // Will return a JSON encoded object.
     case (preg_match('/^=(\w+) info$/',$msg,$m)):
         list(,$id) = $m;
-        //log\trace("Getting info for server: %s",$id);
+        log\trace("Getting info for server: %s",$id);
         if( isset($infos[$id]) ) $socket->send($infos[$id]);
         else $socket->send(json_encode(false));
         break;
@@ -101,7 +104,7 @@ function process($socket)
     // Will return a JSON encoded object.
     case (preg_match('/^=(\w+) report$/',$msg,$m)):
         list(,$id) = $m;
-        //log\trace("Getting report for server: %s",$id);
+        log\trace("Getting report for server: %s",$id);
         if( ! isset($commands[$id]) ) { $socket->send(json_encode(false)); break; }
         $reports = array('reads'=>0,'writes'=>0,'others'=>0,'totals'=>0);
         foreach( $commands[$id] as $cmd => $stat )
@@ -159,7 +162,7 @@ function process($socket)
     // Will return "ok" to the ZMQ client.
     case (preg_match('/§(\w+) (.*)$/',$msg,$m)):
         list(,$id,$data) = $m;
-        //log\trace("Add infos for server: %s",$id);
+        log\trace("Add infos for server: %s",$id);
         $infos[$id] = $data;
         $socket->send('ok');
 

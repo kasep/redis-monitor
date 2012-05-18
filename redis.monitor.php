@@ -9,15 +9,16 @@ use Exception;
 
 if( PHP_SAPI!='cli') die("Must be run in cli");
 
-require_once 'lib.cli.php';
-require_once 'lib.arg.php';
-require_once 'lib.redis.php';
-require_once 'lib.log.php';
-require_once 'inc.errors.php';
+require_once 'qad/libraries/lib.cli.php';
+require_once 'qad/libraries/lib.arg.php';
+require_once 'qad/libraries/lib.log.php';
+require_once 'qad/includes/inc.errors.php';
+require_once 'qad/libraries/lib.redis.php';
 
 // {{{ --errors management
 
-$log = log\lookup('monitor');
+log\lookup('monitor');
+log\level('NONE');
 set_error_handler('qad\error_handler');
 set_exception_handler(function(Exception $e){
     std\err("%s at %s:%s",$e->getMessage(),$e->getFile(),$e->getLine());
@@ -36,6 +37,7 @@ $count_limit = 1000; // Catch 1000 commands and stop.
 $time_limit = 0.5; // Catch any commands during 0.5s miminum.
 
 arg\parser()
+    ->arg('verbose','v')->exe(function(){log\level('TRACE');})
     ->arg('help','h')->exe(function(){std\out(
 <<<out
 Usage: {$GLOBALS['argv'][0]} -d=DSN -i=ID [-h=HOST] [-p=PORT] [-c=COUNT] [-t=TIME] [-a=AUTH] [-w=WAIT] [-h]
@@ -60,6 +62,8 @@ Options:
   -t, --time-limit=TIME    Limit the seconds when catching instructions in a row.
   -a, --auth=AUTH          The AUTH password for the Redis server.
   -w, --wait=TIME          Wait for TIME seconds before listing for the next commands.
+  -v, --verbose            Display trace for debugging.
+
 
 out
     );exit(1);})
@@ -127,19 +131,19 @@ while( $catched and microtime(true) < ($start+$time_limit) and $m = $redis->moni
         if( ! $first ) $first = $time;
         if( !isset($cmds[$cmd]) ) $cmds[$cmd] = 1;
         else $cmds[$cmd] += 1;
-        //log\trace( "CMD:%s ; CATCHED:%s", $cmd, $catched );
+        log\trace( "CMD:%s ; CATCHED:%s", $cmd, $catched );
     }
 }
 $last = $time;
 
-//log\trace( 'FIRST:%s LAST:%s DIFF:%s',$first,$last, $last-$first);
+log\trace( 'FIRST:%s LAST:%s DIFF:%s',$first,$last, $last-$first);
 
 close();
 
 if( 'ok' != $queue->send('+'.json_encode(array(
     'id' => $id,
     'commands' => array_map(function($count)use($count_limit,$catched,$last,$first){
-    //log\trace( 'COUNT:%s FREQ:%s RATIO:%s', $count, $count / ($last-$first), $count / ($count_limit-$catched) );
+    log\trace( 'COUNT:%s FREQ:%s RATIO:%s', $count, $count / ($last-$first), $count / ($count_limit-$catched) );
     $return =  array(
         'ratio' => $count / ($count_limit - $catched),
         'freq' => false);
