@@ -57,8 +57,9 @@ function process($socket)
     {
 
     // Store stats for a command.
-    // Format of the ZMQ command: "+JSON"
-    // Format of the JSON: {cmd:CMD, ratio:RATIO, freq:FREQ}
+    // Format of the ZMQ command: "+<data>"
+    // With <data> is a JSON encoded associative array containing informations.
+    // Format of <data>: {id:ID, cmd:CMD, ratio:RATIO, freq:FREQ}
     // Will return "ok" to the ZMQ client.
     case ($msg[0]=='+' and is_object($data=json_decode(substr($msg,1)))):
         //log\trace("Add stats commands for server: %s",$data->id);
@@ -136,9 +137,10 @@ function process($socket)
         $socket->send(json_encode($reports));
         break;
 
-    // Save informations about the server.
+    // Store informations about the server.
     // Format of the ZMQ command: "§<data>";
-    // With <data> is a JSON encoded associative array contaiting informations.
+    // With <data> is a JSON encoded associative array containing informations.
+    // Format of <data>: {total_commands_processed,:NUM, total_connections_received:NUM}
     // Will return "ok" to the ZMQ client.
     case (preg_match('/§(\w+) (.*)$/',$msg,$m)):
         list(,$id,$data) = $m;
@@ -174,6 +176,18 @@ function process($socket)
             'cnx' => ($last['cnx'] - $first['cnx']) / (($last_time - $first_time) * 10) ) ) );
         break;
 
+    // Store the slowlog for a server.
+    // Format of thz ZMQ command: "#<data>"
+    // With <data> is a JSON encoded associative array containing informations.
+    // Format of <data>: {id:ID, log:LOG}
+    // Format of LOG: {num:NUM, time:TIME, duration:DURATION, cmd:CMD}
+    case ($msg[0]=='#' and is_object($data=json_decode(substr($msg,1)))):
+        log\trace("Add slowlog infos for server: %s",$data->id);
+        log\trace($msg);
+        $slowlog[$data->id] = json_decode($data->log);
+        $socket->send('ok');
+        break;
+
     default:
         $socket->send('error: unknow command');
     }
@@ -195,6 +209,7 @@ $writes = array();
 $commands = array(); // List of all Commands object for each monitored server.
 $infos = array(); // List of infos array from server.
 $fives = array(); // Store number of connections and commands every five minutes for each server.
+$slowlog = array(); // Store information about slow commands for each server.
 
 $last = 0; // The last local time (not the redis time) when the stats has been updated.
 while(true)
