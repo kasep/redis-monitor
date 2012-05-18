@@ -111,6 +111,7 @@ while(true)
     try
     {
         $log = $redis->slowlog('get','10');
+        foreach( $log as $k=>$v ) $log[$k][3] = implode(' ',$v[3]);
     }
     catch( ProtocolException $e )
     {
