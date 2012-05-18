@@ -63,6 +63,11 @@ header { margin-top: 3em; }
         <input id=list class=span2 value="<?php echo default_list_server ?>" rel=tooltip title="The list of server's identifier" />
         </form>
     </div>
+    <ul class="nav nav-tab">
+        <li class="divider-vertical"></li>
+        <li class=active><a href="#dashboard">Stats</a></li>
+        <li><a href="#slowlog">Slow log</a></li>
+    </ul>
     <ul class="nav pull-right">
         <li><a id=refresh rel=tooltip title="Refresh the data">Refresh</a></li>
         <li><a id=auto rel=tooltip title="Auto refresh data during 20 seconds">Auto</a></li>
@@ -70,6 +75,9 @@ header { margin-top: 3em; }
 </div></div></div>
 
 </header>
+
+<div class="tab-content">
+<div class="tab-pane active" id="dashboard">
 
 <article>
 
@@ -123,6 +131,37 @@ header { margin-top: 3em; }
 </div>
 
 </article>
+
+</div>
+<div class="tab-pane active" id="slowlog">
+
+<article>
+
+<div class=row id=tablelog><div class=span12>
+<table class="table table-condensed">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Date<th>
+            <th>Duration</th>
+            <th>Command</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr class=item>
+            <td class=id></td>
+            <td class=date></td>
+            <td class=duration></td>
+            <td class=cmd></td>
+        </tr>
+    </tbody>
+</table>
+</div></div>
+
+</article>
+
+</div>
+</div>
 
 </body>
 <script>
@@ -253,6 +292,9 @@ $("dt").each(function(){
 
 // Enable tooltips
 $("[rel=tooltip]").tooltip();
+
+// Enable tabs
+$('.nav-tab a').click(function(){$(this).tab('show')});
 
 // Enable refresh
 $("#refresh").click(update);
