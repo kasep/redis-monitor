@@ -157,7 +157,7 @@ function process($socket)
         break;
 
     // Get an average number of commands and connections per seconds from a given number of last five minutes
-    // Format of thz ZMQ command: "~<id> five"
+    // Format of the ZMQ command: "~<id> five"
     // With <id> is the Redis name unique ID.
     case (preg_match('/~(\w+) five/',$msg,$m)):
         list(,$id) = $m;
@@ -177,18 +177,20 @@ function process($socket)
         break;
 
     // Store the slowlog for a server.
-    // Format of thz ZMQ command: "#<data>"
+    // Format of the ZMQ command: "#<id> <data>"
     // With <data> is a JSON encoded associative array containing informations.
-    // Format of <data>: {id:ID, log:LOG}
-    // Format of LOG: {num:NUM, time:TIME, duration:DURATION, cmd:CMD}
-    case ($msg[0]=='#' and is_object($data=json_decode(substr($msg,1)))):
-        log\trace("Add slowlog infos for server: %s",$data->id);
-        log\trace($msg);
-        $slowlog[$data->id] = json_decode($data->log);
+    // Format of <data>: {num:NUM, time:TIME, duration:DURATION, cmd:CMD}
+    case (preg_match('/\#(\w+) (.+)/',$msg,$m)):
+        list(,$id,$data) = $m;
+        log\trace("Add slowlog infos for server: %s",$id);
+        log\trace($data);
+        $data = json_decode($data);
+        if($data) $slowlog[$id] = $data;
         $socket->send('ok');
         break;
 
     default:
+        log\error('Unknow instruction: %s',$msg);
         $socket->send('error: unknow command');
     }
 }
