@@ -189,6 +189,20 @@ function process($socket)
         $socket->send('ok');
         break;
 
+    // Return infos about the slowlog.
+    // Format of the ZMQ command: "!<id>,<id>,..."
+    case ($msg[0]=='!'):
+        $ids = explode(',',substr($msg,1));
+        log\trace("Return slowlog for ids: %s",json_encode($ids));
+        $return = array();
+        foreach( $slowlog as $id => $server )
+            foreach( $server as $log )
+                $return = array('id'=>$id,'num'=>$log[0],'time'=>$log[1],'duration'=>$log[2],'cmd'=>$log[3]);
+        usort($return,function($a,$b){
+            return $a['time'] < $b['time'] ? -1 : 1;
+        });
+        $socket->send(json_encode($return));
+
     default:
         log\error('Unknow instruction: %s',$msg);
         $socket->send('error: unknow command');
