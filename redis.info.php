@@ -125,6 +125,7 @@ while(true)
     }
     catch( ProtocolException $e )
     {
+        $log = false;
         // my lib.redis.php script is a shit, don't use it.
     }
 
@@ -133,7 +134,7 @@ while(true)
     // Send all infos.
     if( 'ok' != $queue->send(sprintf('§%s %s',$id,json_encode($i)))->recv() )
         std\err("Event is not send to the ZMQ server (or a protocol error, maybe).");
-    if( 'ok' != $queue->send(sprintf('#%s %s',$id,json_encode($log)))->recv() )
+    if( $log and 'ok' != $queue->send(sprintf('#%s %s',$id,json_encode($log)))->recv() )
         std\err("Event is not send to the ZMQ server (or a protocol error, maybe).");
 
     if( $wait > 0 ) usleep($wait);
