@@ -50,7 +50,7 @@ out
  */
 function process($socket)
 {
-    global $commands, $infos, $log, $fives;
+    global $commands, $infos, $log, $fives, $slowlog;
     $msg = $socket->recv();
     //log\trace('MSG: %s',$msg);
     switch(true)
@@ -197,11 +197,12 @@ function process($socket)
         $return = array();
         foreach( $slowlog as $id => $server )
             foreach( $server as $log )
-                $return = array('id'=>$id,'num'=>$log[0],'time'=>$log[1],'duration'=>$log[2],'cmd'=>$log[3]);
+                if( in_array($id,$ids) ) $return[] = array('id'=>$id,'num'=>$log[0],'time'=>$log[1],'duration'=>$log[2],'cmd'=>$log[3]);
         usort($return,function($a,$b){
             return $a['time'] < $b['time'] ? -1 : 1;
         });
         $socket->send(json_encode($return));
+        break;
 
     default:
         log\error('Unknow instruction: %s',$msg);
