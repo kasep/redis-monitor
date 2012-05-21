@@ -86,7 +86,8 @@ function close()
 // {{{ --listen
 
 $queue = new ZMQSocket(new ZMQContext(), ZMQ::SOCKET_REQ, "RedisMonitor");
-if( !in_array($zmq, $queue->getEndpoints())) $queue->connect($zmq);
+$endpoints = $queue->getEndpoints();
+if( !in_array($zmq, $endpoints['connect'])) $queue->connect($zmq);
 
 open();
 while(true)
@@ -111,7 +112,13 @@ while(true)
     try
     {
         $log = $redis->slowlog('get','10');
-        foreach( $log as $k=>$v ) $log[$k][3] = implode(' ',$v[3]);
+        foreach( $log as $k=>$v )
+        {
+            $log[$k][0] = (int)$log[$k][0];
+            $log[$k][1] = (int)$log[$k][1];
+            $log[$k][2] = (int)$log[$k][2];
+            $log[$k][3] = implode(' ',$v[3]);
+        }
     }
     catch( ProtocolException $e )
     {
