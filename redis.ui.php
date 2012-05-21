@@ -334,7 +334,7 @@ $("dt").each(function(){
 $("[rel=tooltip]").tooltip();
 
 // Enable tabs
-$('.nav-tab a').click(function(){$(this).tab('show');update();});
+$('.nav-tab a').click(function(e){e.preventDefault();$(this).tab('show');update();});
 
 // Enable refresh
 $("#refresh").click(update);
