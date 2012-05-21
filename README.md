@@ -3,7 +3,7 @@ Pretty Simple REDIS monitor tools
 
 This collections of tools allow to monitor activities and status of multiple instances of *Redis* server.
 
-- `redis.server.php` A *0MQ* server that store the status and activities for all instances. (in *PHP* RAM)
+- `redis.server.php` A *ØMQ* server that store the status and activities for all instances. (in *PHP* RAM)
 - `redis.info.php` Grab informations from the `info` and `config get` commands of one instance.
 - `redis.monitor.php` Grab informations from the `monitor` command of one instance and create statistics.
 - `redis.ui.php` An *HTML* page that display the status and activities for all instances.
@@ -21,7 +21,7 @@ Requirement
 -----------
 
 - PHP 5.3+ (web + cli)
-- [0MQ extension for PHP](https://github.com/mkoppanen/php-zmq)
+- [ØMQ extension for PHP](https://github.com/mkoppanen/php-zmq)
 
 To run the PHP daemons, I'm using [*daemontools*](http://cr.yp.to/daemontools.html) but *init.d* or a *screen* can do the work.
 
@@ -50,6 +50,6 @@ Usage
 Troubleshooting
 ---------------
 
-If *0MQ* do not respond correctly, restart your *php-fpm*.
+If *ØMQ* do not respond correctly, restart your *php-fpm*.
 
 
