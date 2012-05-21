@@ -29,7 +29,7 @@ and !empty($_GET['id']) and preg_match('/^\w+$/',$_GET['id']) ):
     exit;
 // Retrieve slowlog for all monitored Redis server from the ZMQ server.
 case ( !empty($_GET['slowlog']) and preg_match('/^tcp:\/\/([\w.]+):(\d+)$/',$_GET['slowlog'])
-and !empty($_GET['ids']) and preg_match('/^(\w+)(,\w+)*$/',$_GET['ids']) ):
+and !empty($_GET['ids']) and preg_match('/^\w+(?:,\w+)*$/',$_GET['ids']) ):
     header('content-type: application/json');
     connect($_GET['slowlog']);
     $slowlog = $queue->send("!{$_GET['ids']}")->recv();
