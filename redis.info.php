@@ -5,7 +5,7 @@
 namespace redis;
 use ZMQ, ZMQSocket, ZMQContext; // 0MQ: The Intelligent Transport Layer: http://www.zeromq.org/
 use qad\redis\Redis, qad\cli as std, qad\arg, qad\log; // Personal library: https://github.com/moechofe/QuickAnDirty
-use Exception;
+use Exception, qad\redis\ProtocolException;
 
 if( PHP_SAPI!='cli') die("Must be run in cli");
 
@@ -89,7 +89,8 @@ function close()
 // {{{ --listen
 
 $queue = new ZMQSocket(new ZMQContext(), ZMQ::SOCKET_REQ, "RedisMonitor");
-if( !in_array($zmq, $queue->getEndpoints())) $queue->connect($zmq);
+$endpoints = $queue->getEndpoints();
+if( !in_array($zmq, $endpoints['connect'])) $queue->connect($zmq);
 
 open();
 while(true)
@@ -110,11 +111,30 @@ while(true)
     $i += array_intersect_key($redis->config_get('*'),
         array_flip(array('maxmemory','maxmemory-policy','save')));
 
+    // Catch showlog.
+    try
+    {
+        $log = $redis->slowlog('get','10');
+        foreach( $log as $k=>$v )
+        {
+            $log[$k][0] = (int)$log[$k][0];
+            $log[$k][1] = (int)$log[$k][1];
+            $log[$k][2] = (int)$log[$k][2];
+            $log[$k][3] = implode(' ',$v[3]);
+        }
+    }
+    catch( ProtocolException $e )
+    {
+        // my lib.redis.php script is a shit, don't use it.
+    }
+
+    close();
+
     // Send all infos.
     if( 'ok' != $queue->send(sprintf('§%s %s',$id,json_encode($i)))->recv() )
         std\err("Event is not send to the ZMQ server (or a protocol error, maybe).");
-
-    close();
+    if( 'ok' != $queue->send(sprintf('#%s %s',$id,json_encode($log)))->recv() )
+        std\err("Event is not send to the ZMQ server (or a protocol error, maybe).");
 
     if( $wait > 0 ) usleep($wait);
 

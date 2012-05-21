@@ -7,17 +7,33 @@ define('default_list_server','6379,6380,6381,6382');
 
 set_time_limit(1);
 
+function connect($dsn)
+{
+    global $queue;
+    $queue = new ZMQSocket(new ZMQContext(), ZMQ::SOCKET_REQ, "RedisMonitor");
+    $endpoints = $queue->getEndpoints();
+    if( !in_array($dsn, $endpoints['connect'])) $queue->connect($dsn);
+}
+
 switch(true)
 {
-// Retreive information about all monitored Redis server from the ZMQ server.
-case (! empty($_GET['update']) and preg_match('/^tcp:\/\/([\w.]+):(\d+)$/',$_GET['update']) and preg_match('/^\w+$/',$_GET['id'])):
+// Retreive informations about on monitored Redis server from the ZMQ server.
+case ( !empty($_GET['update']) and preg_match('/^tcp:\/\/([\w.]+):(\d+)$/',$_GET['update'])
+and !empty($_GET['id']) and preg_match('/^\w+$/',$_GET['id']) ):
     header('content-type: application/json');
-    $queue = new ZMQSocket(new ZMQContext(), ZMQ::SOCKET_REQ, "RedisMonitor");
-    if( !in_array($_GET['update'], $queue->getEndpoints())) $queue->connect($_GET['update']);
+    connect($_GET['update']);
     $report = $queue->send("={$_GET['id']} report")->recv();
     $info = $queue->send("={$_GET['id']} info")->recv();
     $average = $queue->send("~{$_GET['id']} five")->recv();
     echo '{"info":',$info,',"report":',$report,',"average":',$average,'}';
+    exit;
+// Retrieve slowlog for all monitored Redis server from the ZMQ server.
+case ( !empty($_GET['slowlog']) and preg_match('/^tcp:\/\/([\w.]+):(\d+)$/',$_GET['slowlog'])
+and !empty($_GET['ids']) and preg_match('/^(\w+)(,\w+)*$/',$_GET['ids']) ):
+    header('content-type: application/json');
+    connect($_GET['slowlog']);
+    $slowlog = $queue->send("!{$_GET['ids']}")->recv();
+    echo $slowlog;
     exit;
 }
 
@@ -63,6 +79,11 @@ header { margin-top: 3em; }
         <input id=list class=span2 value="<?php echo default_list_server ?>" rel=tooltip title="The list of server's identifier" />
         </form>
     </div>
+    <ul class="nav nav-tab">
+        <li class="divider-vertical"></li>
+        <li class=active><a href="#dashboard">Stats</a></li>
+        <li><a href="#slowlog">Slow log</a></li>
+    </ul>
     <ul class="nav pull-right">
         <li><a id=refresh rel=tooltip title="Refresh the data">Refresh</a></li>
         <li><a id=auto rel=tooltip title="Auto refresh data during 20 seconds">Auto</a></li>
@@ -70,6 +91,9 @@ header { margin-top: 3em; }
 </div></div></div>
 
 </header>
+
+<div class="tab-content">
+<div class="tab-pane active" id="dashboard">
 
 <article>
 
@@ -124,25 +148,40 @@ header { margin-top: 3em; }
 
 </article>
 
+</div>
+<div class="tab-pane active" id="slowlog">
+
+<article>
+
+<div class=row id=tablelog><div class=span12>
+<table class="table table-condensed">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Duration</th>
+            <th>Command</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr class=item>
+            <td class=id></td>
+            <td class=date></td>
+            <td class=duration></td>
+            <td class=cmd></td>
+        </tr>
+    </tbody>
+</table>
+</div></div>
+
+</article>
+
+</div>
+</div>
+
 </body>
 <script>
-
-// Return the value, an average value or 0
-// Params:
-//    object ctx = The context from a pure function directive
-//    string prop = The name of the property used to extract the new value
-//    string sel = A jquery selector for the source of the old value (and destination)
-//    object item = The current server rendering item
-function vaz(ctx,prop,sel,item)
-{
-    var el = $(sel,item);
-    var old = parseFloat(el.text());
-    var value = parseFloat(ctx.report[prop]) || 0;
-    var result = 0;
-    if( old > 0 ) result = (old + value) / 2;
-    else if( old == 0 && value > 0 ) result = value;
-    return result.toFixed(2);
-}
+// {{{ --helpers
 
 // Convert an epoch time into a human readable date/time.
 function mtd(milliseconds)
@@ -159,8 +198,21 @@ function bts(bytes)
     return (bytes / Math.pow(1024, i)).toFixed(2) + '' + sizes[ isNaN( bytes )?0:i+1 ];
 };
 
-// Update information for all servers.
-function update() {
+// }}}
+// {{{ update
+
+function update(both)
+{
+    if( $("#dashboard:visible").length || both ) update_stats();
+    else if( $("#slowlog:visible").length || both ) update_slowlog();
+}
+
+// }}}
+// {{{ update_stats
+
+var item = $("#server").remove();
+
+function update_stats() {
     $("#servers .item").each(function(k,v){
     var server = $("#zmq").val();
     if(!server) server = $("#zmq").attr("placeholder");
@@ -183,7 +235,7 @@ function update() {
             $(".five-connections",v).text(data.average.cnx.toFixed(2));
             $(".five-commands",v).text(data.average.cmd.toFixed(2));
             $(".expired",v).text(data.info.expired_keys);
-            $(".evicted",v).text(data.info.evicted_keys).closest(".alert").toggle( (data.info.evicted_keys > 0 ) );
+            $(".evicted",v).text(data.info.evicted_keys).closest(".alert").toggle( (data.info.evicted_keys > 0) );
             $(".client",v).text(data.info.connected_clients);
             $(".save",v).html(function(){return data.info.save.replace(/(\d+) (\d+)/g,'-$2rec / $1s').substr(1).replace(/-/g,'&#8210; ');});
             $(".last",v).text(mtd(data.info.last_save_time));
@@ -203,13 +255,33 @@ function update() {
     });
 }
 
-var item = $("#server").remove();
+// }}}
+// {{{ update_slowlog
 
-// Get config from local
-//if(localStorage["zmq"]) $("#zmq").val(localStorage["zmq"]);
-if(localStorage["list"]) $("#list").val(localStorage["list"]);
+var slow_log_item = $("#tablelog .item").remove();
+function update_slowlog()
+{
+    var list = $("#tablelog tbody").empty().clone();
+    var server = $("#zmq").val();
+    if(!server) server = $("#zmq").attr("placeholder");
+    $.getJSON('', {
+        slowlog: server,
+        ids: $("#list").val() },function(data) {
+            $.each(data,function(k,v){
+                var item = slow_log_item.clone();
+                $(".id",item).text(v.id+" #"+v.num);
+                $(".date",item).text(mtd(v.time));
+                $(".duration",item).text(v.duration / 1000);
+                $(".cmd",item).text(v.cmd);
+                $(item).appendTo(list);
+            });
+            $("#tablelog tbody").replaceWith(list);
+        });
+}
 
-// Update server list
+// }}}
+// {{{ update_server_list
+
 function update_server_list(callback)
 {
     $("#servers").empty();
@@ -237,6 +309,13 @@ function update_server_list(callback)
     localStorage["list"] = list;
 }
 
+// }}}
+// {{{ --init
+
+// Get config from local
+//if(localStorage["zmq"]) $("#zmq").val(localStorage["zmq"]);
+if(localStorage["list"]) $("#list").val(localStorage["list"]);
+
 // Enable update every second.
 var update_interval = null;
 
@@ -253,6 +332,9 @@ $("dt").each(function(){
 
 // Enable tooltips
 $("[rel=tooltip]").tooltip();
+
+// Enable tabs
+$('.nav-tab a').click(function(){$(this).tab('show');update();});
 
 // Enable refresh
 $("#refresh").click(update);
@@ -278,6 +360,7 @@ update_server_list(update);
 
 });
 
+// }}}
 </script>
 </html>
 

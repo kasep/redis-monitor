@@ -45,23 +45,6 @@ out
     ->do;
 
 // }}}
-// {{{ Commands
-
-class Commands
-{
-    private $cmds = array();
-
-    function reset() { $this->cmds = array(); }
-
-    function add($cmd, $ratio, $freq)
-    {
-        $this->cmds[$cmd] = array(
-            'ratio'=>$ratio,
-            'freq'=>$freq);
-    }
-}
-
-// }}}
 // {{{ process
 
 /**
@@ -70,15 +53,16 @@ class Commands
  */
 function process($socket)
 {
-    global $commands, $infos, $log, $fives;
+    global $commands, $infos, $log, $fives, $slowlog;
     $msg = $socket->recv();
     log\trace('MSG: %s',$msg);
     switch(true)
     {
 
     // Store stats for a command.
-    // Format of the ZMQ command: "+JSON"
-    // Format of the JSON: {cmd:CMD, ratio:RATIO, freq:FREQ}
+    // Format of the ZMQ command: "+<data>"
+    // With <data> is a JSON encoded associative array containing informations.
+    // Format of <data>: {id:ID, cmd:CMD, ratio:RATIO, freq:FREQ}
     // Will return "ok" to the ZMQ client.
     case ($msg[0]=='+' and is_object($data=json_decode(substr($msg,1)))):
         log\trace("Add stats commands for server: %s",$data->id);
@@ -156,9 +140,10 @@ function process($socket)
         $socket->send(json_encode($reports));
         break;
 
-    // Save informations about the server.
+    // Store informations about the server.
     // Format of the ZMQ command: "§<data>";
-    // With <data> is a JSON encoded associative array contaiting informations.
+    // With <data> is a JSON encoded associative array containing informations.
+    // Format of <data>: {total_commands_processed,:NUM, total_connections_received:NUM}
     // Will return "ok" to the ZMQ client.
     case (preg_match('/§(\w+) (.*)$/',$msg,$m)):
         list(,$id,$data) = $m;
@@ -175,7 +160,7 @@ function process($socket)
         break;
 
     // Get an average number of commands and connections per seconds from a given number of last five minutes
-    // Format of thz ZMQ command: "~<id> five"
+    // Format of the ZMQ command: "~<id> five"
     // With <id> is the Redis name unique ID.
     case (preg_match('/~(\w+) five/',$msg,$m)):
         list(,$id) = $m;
@@ -194,7 +179,36 @@ function process($socket)
             'cnx' => ($last['cnx'] - $first['cnx']) / (($last_time - $first_time) * 10) ) ) );
         break;
 
+    // Store the slowlog for a server.
+    // Format of the ZMQ command: "#<id> <data>"
+    // With <data> is a JSON encoded associative array containing informations.
+    // Format of <data>: {num:NUM, time:TIME, duration:DURATION, cmd:CMD}
+    case (preg_match('/\#(\w+) (.+)/',$msg,$m)):
+        list(,$id,$data) = $m;
+        log\trace("Add slowlog infos for server: %s",$id);
+        log\trace($data);
+        $data = json_decode($data);
+        if($data) $slowlog[$id] = $data;
+        $socket->send('ok');
+        break;
+
+    // Return infos about the slowlog.
+    // Format of the ZMQ command: "!<id>,<id>,..."
+    case ($msg[0]=='!'):
+        $ids = explode(',',substr($msg,1));
+        log\trace("Return slowlog for ids: %s",json_encode($ids));
+        $return = array();
+        foreach( $slowlog as $id => $server )
+            foreach( $server as $log )
+                if( in_array($id,$ids) ) $return[] = array('id'=>$id,'num'=>$log[0],'time'=>$log[1],'duration'=>$log[2],'cmd'=>$log[3]);
+        usort($return,function($a,$b){
+            return $a['time'] < $b['time'] ? -1 : 1;
+        });
+        $socket->send(json_encode($return));
+        break;
+
     default:
+        log\error('Unknow instruction: %s',$msg);
         $socket->send('error: unknow command');
     }
 }
@@ -215,6 +229,7 @@ $writes = array();
 $commands = array(); // List of all Commands object for each monitored server.
 $infos = array(); // List of infos array from server.
 $fives = array(); // Store number of connections and commands every five minutes for each server.
+$slowlog = array(); // Store information about slow commands for each server.
 
 $last = 0; // The last local time (not the redis time) when the stats has been updated.
 while(true)

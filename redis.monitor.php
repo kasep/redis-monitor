@@ -106,7 +106,8 @@ function close()
 // {{{ --listen
 
 $queue = new ZMQSocket(new ZMQContext(), ZMQ::SOCKET_REQ, "RedisMonitor");
-if( !in_array($zmq, $queue->getEndpoints())) $queue->connect($zmq);
+$endpoints = $queue->getEndpoints();
+if( !in_array($zmq, $endpoints['connect'])) $queue->connect($zmq);
 
 $last = 0; // Last total_commands_processed value from the "info" REDIS command.
 $current = 0; // Current total_commands_processed value for comparaison with $last.
