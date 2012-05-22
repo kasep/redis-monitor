@@ -25,6 +25,8 @@ Requirement
 
 To run the PHP daemons, I'm using [*daemontools*](http://cr.yp.to/daemontools.html) but *init.d* or a *screen* can do the work.
 
+![How does it work](http://prettysimple.github.com/redis-monitor/howdoesitwork.png)
+
 Setup
 -----
 
