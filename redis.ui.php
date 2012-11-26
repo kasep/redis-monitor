@@ -56,15 +56,17 @@ and !empty($_GET['ids']) and preg_match('/^\w+(?:,\w+)*$/',$_GET['ids']) ):
 .process:before { content: "PID:" }
 .client:before { content: "clients:" }
 .navbar a { cursor: default; }
+.navbar-inverse .nav > li > a { padding-right: 5px; padding-left: 5px; }
 dt { cursor: default; }
-.item .navbar-inner { background-color: #07c; background-image: -moz-linear-gradient(top, #08c, #05c); background-image: -ms-linear-gradient(top, #08c, #05c); background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#08c), to(#05c)); background-image: -webkit-linear-gradient(top, #08c, #05c); background-image: -o-linear-gradient(top, #08c, #05c); background-image: linear-gradient(top, #08c, #05c); background-repeat: repeat-x; filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#08c', endColorstr='#05c', GradientType=0); }
-.item .navbar .nav > li > a { color: #9bf; }
-.item .row .well { padding: 7px; text-align: center; }
+.ittem .navbar-inner { background-color: #07c; background-image: -moz-linear-gradient(top, #08c, #05c); background-image: -ms-linear-gradient(top, #08c, #05c); background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#08c), to(#05c)); background-image: -webkit-linear-gradient(top, #08c, #05c); background-image: -o-linear-gradient(top, #08c, #05c); background-image: linear-gradient(top, #08c, #05c); background-repeat: repeat-x; filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#08c', endColorstr='#05c', GradientType=0); }
+.ittem .navbar .brand { color: #cff; text-shadow: 0 1px 0 #ABF; }
+.ittem .navbar .nav > li > a { color: #9bf; }
+.item .row .well { padding: 3px; text-align: center; margin-bottom: 7px; }
 header { margin-top: 3em; }
 .no-well { background-color: inherit; border-color: white; box-shadow: none; }
-.no-well h6 { text-align: right; }
+.no-well h6 { text-align: right; margin: 0px; }
 #refresh, #auto { cursor: pointer; }
-.navbar .brand { color: white; }
+.navnbar .brand { color: white; }
 </style>
 </head>
 <body class=container>
@@ -75,8 +77,8 @@ header { margin-top: 3em; }
     <a class=brand>Redis monitor</a>
     <div class=nav-collapse>
         <form class="navbar-form pull-left">
-        <input id=zmq class=span2 value="<?php echo default_zmq_server ?>" placeholder="<?php echo default_zmq_server ?>" rel=tooltip title="The DSN of the ZMQ server" />
-        <input id=list class=span2 value="<?php echo default_list_server ?>" rel=tooltip title="The list of server's identifier" />
+        <input id=zmq class=span2 type=text value="<?php echo default_zmq_server ?>" placeholder="<?php echo default_zmq_server ?>" rel=tooltip title="The DSN of the ZMQ server" />
+        <input id=list class=span2 type=text value="<?php echo default_list_server ?>" rel=tooltip title="The list of server's identifier" />
         </form>
     </div>
     <ul class="nav nav-tab">
@@ -99,7 +101,7 @@ header { margin-top: 3em; }
 
 <div class=row id=servers>
     <div class="span6 item" id=server>
-        <div class=navbar><div class=navbar-inner><div class=container>
+        <div class="navbar navbar-inverse"><div class=navbar-inner><div class=container>
             <a class="brand id" href=#></a>
             <ul class=nav>
                 <li><a class=process rel=tooltip title="Process ID"></a></li>
@@ -225,7 +227,7 @@ function update_stats() {
             $(".uptime",v).text(data.info.uptime_in_days);
             $(".blocked",v).text(data.info.blocked_clients).closest(".alert").toggle( (data.info.blocked_clients > 0) );
             $(".memory",v).text(data.info.used_memory_human);
-            $(".max",v).text(bts(data.info.maxmemory));
+            $(".max",v).text(bts(data.info.maxmemory||'unknow'));
             $(".peak",v).text(data.info.used_memory_peak_human);
             $(".memory-bar",v).width( memory_usage.toFixed(1) + '%' ).closest(".progress").removeClass("progress-success progress-danger progress-warning").addClass( "progress-" + ((memory_usage > 90)?'danger':(memory_usage > 70)?'warning':'success') )
             $(".connections",v).text(data.info.total_connections_received);
@@ -237,7 +239,7 @@ function update_stats() {
             $(".expired",v).text(data.info.expired_keys);
             $(".evicted",v).text(data.info.evicted_keys).closest(".alert").toggle( (data.info.evicted_keys > 0) );
             $(".client",v).text(data.info.connected_clients);
-            $(".save",v).html(function(){return data.info.save.replace(/(\d+) (\d+)/g,'-$2rec / $1s').substr(1).replace(/-/g,'&#8210; ');});
+            $(".save",v).html(function(){return data.info.save?data.info.save.replace(/(\d+) (\d+)/g,'-$2rec / $1s').substr(1).replace(/-/g,'&#8210; '):'';});
             $(".last",v).text(mtd(data.info.last_save_time));
             $(".save-progress",v).toggle( (data.info.bgsave_in_progress > 0) );
             $(".records",v).text(function(){var c=0;
