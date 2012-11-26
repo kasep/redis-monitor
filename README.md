@@ -27,6 +27,22 @@ To run the PHP daemons, I'm using [*daemontools*](http://cr.yp.to/daemontools.ht
 
 ![How does it work](http://prettysimple.github.com/redis-monitor/howdoesitwork.png)
 
+Installaton example on ubuntu 12.04
+-----------------------------------
+
+    sudo aptitude install php5-dev libzmq1
+    git clone git://github.com/mkoppanen/php-zmq.git
+    cd php-zmq
+    phpize
+    make
+    sudo make install
+    echo 'extension=zmq.so' > /etc/php5/fpm/conf.d/zmq.ini
+    echo 'extension=zmq.so' > /etc/php5/cli/conf.d/zmq.ini
+    sudo service php5-fpm restart
+
+    git clone git://github.com/PrettySimple/redis-monitor.git
+    git submodule init && git submodule update
+
 Setup
 -----
 
