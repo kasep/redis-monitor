@@ -104,6 +104,7 @@ function process($socket)
             case 'setex': case 'setrange': case 'sinterstore': case 'smove': case 'sort': case 'srem':
             case 'sunionstore': case 'zadd': case 'zincrby': case 'zinterstore': case 'zrem':
             case 'zremrangebyrank': case 'zremrangebyscore': case 'zunionstore':
+            case 'restore': case 'psetex':
                 $read = false;
                 $write = true;
                 $other = false;
@@ -115,6 +116,9 @@ function process($socket)
             case 'sinter': case 'sismember': case 'smembers': case 'srandommember': case 'strlen':
             case 'sunion': case 'ttl': case 'type': case 'zcard': case 'zcount': case 'zrandebyscore':
             case 'zrank': case 'zrevrank': case 'zscore':
+            case 'bitop': case 'bitcount':
+            case 'pexpire': case 'pexpireat': case 'pttl':
+            case 'dump':
                 $read = true;
                 $write = false;
                 $other = false;
