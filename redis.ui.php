@@ -58,10 +58,7 @@ and !empty($_GET['ids']) and preg_match('/^\w+(?:,\w+)*$/',$_GET['ids']) ):
 .navbar a { cursor: default; }
 .navbar-inverse .nav > li > a { padding-right: 5px; padding-left: 5px; }
 dt { cursor: default; }
-.ittem .navbar-inner { background-color: #07c; background-image: -moz-linear-gradient(top, #08c, #05c); background-image: -ms-linear-gradient(top, #08c, #05c); background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#08c), to(#05c)); background-image: -webkit-linear-gradient(top, #08c, #05c); background-image: -o-linear-gradient(top, #08c, #05c); background-image: linear-gradient(top, #08c, #05c); background-repeat: repeat-x; filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#08c', endColorstr='#05c', GradientType=0); }
-.ittem .navbar .brand { color: #cff; text-shadow: 0 1px 0 #ABF; }
-.ittem .navbar .nav > li > a { color: #9bf; }
-.item .row .well { padding: 3px; text-align: center; margin-bottom: 7px; }
+.item .row .well, .item .row .save-progress { padding: 3px; text-align: center; margin-bottom: 7px; }
 header { margin-top: 3em; }
 .no-well { background-color: inherit; border-color: white; box-shadow: none; }
 .no-well h6 { text-align: right; margin: 0px; }
